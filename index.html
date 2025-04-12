@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExpressAI - Face Emotion Recognition</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-image: url('/static/disp2.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #ede6e6;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            color: rgb(203, 196, 196);
+        }
+
+        .title {
+            font-size: 60px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px auto;
+            width: 100%;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .container {
+            margin-top: 200px;
+            text-align: center;
+        }
+
+        .input-box {
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 18px;
+    font-weight: bold;
+    padding: 100px; /* Increased padding */
+    border-radius: 25px;
+    display: flex; /* Changed to flex */
+    flex-direction: column; /* Vertical arrangement */
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 8px rgba(10, 5, 5, 0.3);
+    width: 500px; /* Added a fixed width, or adjust as needed */
+    margin: 0 auto; /* Added margin auto to center the box */
+}
+
+input, button {
+    padding: 12px 24px;
+    margin: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: 100%; /* Make buttons span the entire width */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        #videoInput {
+            background-color: #f3e8e8;
+            color: black;
+        }
+
+        .loading-wheel-container {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading-wheel {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 80%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            z-index: 10;
+        }
+
+        #progressBarContainer {
+            width: 80%;
+            margin: 20px auto;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 20px;
+            background-color: #3498db;
+            border-radius: 5px;
+        }
+
+        #resultsContainer {
+            margin-top: 50px;
+            display: none;
+        }
+
+        .results-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin: 10px auto;
+            width: 100%;
+        }
+
+    </style>
+    <script>
+        async function clearData() {
+            await fetch('/clear', { method: 'POST' });
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('progressBarContainer').style.display = 'none';
+        }
+
+        function validateFile() {
+            const fileInput = document.getElementById('videoInput');
+            const file = fileInput.files[0];
+            const allowedExtensions = ['mp4', 'avi', 'mov', 'mkv'];
+
+            if (!file) {
+                alert("Please select a file.");
+                return false;
+            }
+
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(fileExtension)) {
+                alert("Unsupported file format! Please upload a video file (MP4, AVI, MOV, MKV).");
+                fileInput.value = "";
+                return false;
+            }
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('loadingWheelContainer').style.display = 'block';
+            document.getElementById('progressBarContainer').style.display = 'block';
+            simulateProgress();
+            return true;
+        }
+
+        function startRealTime() {
+            window.location.href = '/realtime';
+        }
+
+        function showUploadForm() {
+    console.log("showUploadForm called"); //debugging line
+    document.getElementById('uploadForm').style.display = 'block';
+    document.getElementById('realtimeButton').style.display = 'none';
+    document.getElementById('uploadButton').style.display = 'none';
+    document.getElementById('clearButton').style.display = 'inline-block';
+    document.getElementById('backButton').style.display = 'inline-block';
+}
+
+function showMainButtons() {
+    console.log("showMainButtons called"); //debugging line
+    document.getElementById('uploadForm').style.display = 'none';
+    document.getElementById('realtimeButton').style.display = 'block';
+    document.getElementById('uploadButton').style.display = 'block';
+    document.getElementById('clearButton').style.display = 'none';
+    document.getElementById('backButton').style.display = 'none';
+}
+        function clearVideo() {
+            document.getElementById('videoInput').value = '';
+        }
+
+        function simulateProgress() {
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    document.getElementById('loadingWheelContainer').style.display = 'none';
+                    document.getElementById('progressBarContainer').style.display = 'none';
+                    document.getElementById('overlay').style.display = 'none';
+                    displayResults();
+                } else {
+                    width++;
+                    document.getElementById('progressBar').style.width = width + '%';
+                }
+            }, 50);
+        }
+
+        async function displayResults() {
+            const formData = new FormData(document.getElementById('uploadForm'));
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const results = await response.json();
+
+                document.getElementById('resultsContainer').innerHTML = `
+                    <div class="results-box">
+                        <p>Emotion: ${results.emotion}</p>
+                        <p>Confidence: ${results.confidence}</p>
+                    </div>
+                `;
+                document.getElementById('resultsContainer').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error fetching results:', error);
+                alert('Failed to get results.');
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <div id="overlay"></div>
+    <div class="title">ExpressAI</div>
+    <div class="container">
+        <div class="input-box">
+            <button id="uploadButton" onclick="showUploadForm()">Upload Video</button>
+            <button id="realtimeButton" onclick="startRealTime()">Real-time Detection</button>
+
+            <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" onsubmit="return validateFile()" style="display: none;">
+                <label>Upload a Video:</label>
+                <input type="file" name="video" id="videoInput" accept="video/*" required>
+                <button type="submit">Proceed</button>
+                <button type="button" id="clearButton" onclick="clearVideo()" style="display: none;">Clear</button>
+                <button type="button" id="backButton" onclick="showMainButtons()" style="display: none;">Back</button>
+                <div class="loading-wheel-container" id="loadingWheelContainer">
+                    <div class="loading-wheel"></div>
+                </div>
+                <div id="progressBarContainer">
+                    <div id="progressBar"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="resultsContainer">
+        <div class="results-box">
+            <p>Emotion Analysis Results Here</p>
+            <p>This is placeholder text. Replace with your actual results.</p>
+        </div>
+    </div>
+</body>
+</html>

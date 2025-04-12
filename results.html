@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detected Emotions</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-image: url('/static/disp2.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #e0e0e0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: bold;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .output-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px;
+            width: 80%;
+            max-width: 800px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .frame {
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            width: 70%;
+            max-width: 400px;
+            height: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .emotion-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffcc00;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+        }
+
+        .home-button {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .home-button:hover {
+            background-color: #b71c1c;
+        }
+
+        .status-message {
+            font-size: 20px;
+            font-weight: 600;
+            color: #64dd17;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+        }
+
+        .loading-wheel-container {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading-wheel {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Emotion Analysis Results</div>
+    <div class="container">
+        <div class="loading-wheel-container" id="loadingWheelContainer">
+            <div class="loading-wheel"></div>
+        </div>
+        <div class="output-box">
+            <div id="statusMessage"></div>
+            <div id="output"></div>
+            <button onclick="window.location.href='/'" class="home-button">Back to Home</button>
+        </div>
+    </div>
+
+    <script>
+        let intervalId;
+        const statusMessage = document.getElementById('statusMessage');
+        const loadingWheelContainer = document.getElementById('loadingWheelContainer');
+
+        function fetchDetectedData() {
+            fetch('/get_detected_data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Received data:", data);
+                    console.log("Frames:", data.frames);
+                    console.log("Emotions:", data.emotions);
+
+                    const outputDiv = document.getElementById('output');
+                    outputDiv.innerHTML = "";
+
+                    if (data.processing) {
+                        loadingWheelContainer.style.display = 'block';
+                        statusMessage.textContent = "Video processing in progress. Please wait...";
+                    } else {
+                        loadingWheelContainer.style.display = 'none';
+                        if (Object.keys(data.frames).length > 0) {
+                            statusMessage.className = "status-message";
+                            statusMessage.textContent = "Video processing completed.";
+                        } else {
+                            statusMessage.textContent = "No emotions detected or no data received.";
+                        }
+                    }
+
+                    Object.keys(data.frames).forEach(emotion => {
+                        if (data.frames[emotion]) {
+                            const img = document.createElement('img');
+                            img.src = "data:image/jpeg;base64," + data.frames[emotion];
+                            img.classList.add('frame');
+                            outputDiv.appendChild(img);
+
+                            const emotionData = data.emotions[emotion];
+                            const probability = emotionData.probability.toFixed(2) + "%";
+
+                            const emotionText = document.createElement('p');
+                            emotionText.classList.add('emotion-text');
+                            emotionText.textContent = `${emotion}: ${probability}`;
+                            outputDiv.appendChild(emotionText);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    statusMessage.textContent = 'Error fetching data: ' + error.message;
+                });
+        }
+
+        statusMessage.textContent = "Waiting for video processing to start...";
+        loadingWheelContainer.style.display = 'block';
+        intervalId = setInterval(fetchDetectedData, 2000);
+
+        window.addEventListener('beforeunload', () => {
+            clearInterval(intervalId);
+        });
+    </script>
+</body>
+</html>
