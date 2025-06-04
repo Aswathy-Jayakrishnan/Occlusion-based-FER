@@ -14,14 +14,15 @@ TensorFlow/Keras: For loading and running the pre-trained hybrid emotion recogni
 RetinaFace: (Assumed from RetinaFace.detect_faces) A powerful face detection library used for accurate face localization within frames.
 HTML, CSS, JavaScript: For the frontend user interface.
 PIL (Pillow): For image processing, specifically converting OpenCV images to PIL format for model input.
+
 Setup and Installation
+
 Follow these steps to get ExpressAI up and running on your local machine.
 
 Prerequisites
 Python 3.8+
 pip (Python package installer)
 1. Clone the Repository
-Bash
 
 git clone <your-repository-url>
 cd ExpressAI
@@ -66,6 +67,7 @@ Ensure the following directories exist in your project's root:
 ├── uploads/
 ├── results/
 └── realtime_emotions/
+
 7. Run the Application
 Bash
 
@@ -76,26 +78,40 @@ Usage
 Home Page (/)
 The home page provides two main options:
 
-Upload Video: Click this button to reveal a form where you can upload a video file for emotion analysis. Supported formats include MP4, AVI, MOV, and MKV.
-Real-time Detection: Click this button to start real-time emotion detection using your webcam.
+  Upload Video: Click this button to reveal a form where you can upload a video file for emotion analysis. Supported formats include MP4, AVI, MOV, and MKV.
+
+  Real-time Detection: Click this button to start real-time emotion detection using your webcam.
+
 Video Analysis
 Click on "Upload Video" on the home page.
 Select a video file from your computer.
 Click "Proceed".
 The application will process the video, and a progress bar will be displayed.
 Once processing is complete, you'll be redirected to the results page showing the detected emotions with corresponding frames and probabilities.
+
 Real-time Detection
 Click on "Real-time Detection" on the home page.
 Your browser might ask for permission to access your webcam. Grant it.
 The live webcam feed will appear, and detected emotions will be displayed alongside their probabilities.
+
 Folder Structure
+
 app.py: The main Flask application.
+
 hybrid_fer_model.h5: Your pre-trained emotion recognition model.
+
 static/: Contains static files like CSS, JavaScript, and images (e.g., disp2.jpg for backgrounds).
+
 templates/: Contains HTML template files:
+
 index.html: The main landing page.
+
 realtime.html: Page for real-time webcam detection.
+
 results.html: Page displaying video analysis results.
+
 uploads/: Temporary directory to store uploaded video files.
+
 results/: (Currently unused in the provided code, but good practice to keep) Could be used to save analysis reports or processed frames.
+
 realtime_emotions/: Stores text files with timestamps, logging real-time detected emotions and their probabilities.
