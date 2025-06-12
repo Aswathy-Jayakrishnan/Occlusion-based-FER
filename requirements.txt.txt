@@ -1,0 +1,6 @@
+Flask
+opencv-python
+tensorflow
+Pillow
+retina-face  # Assuming this is the library you're using for RetinaFace
+numpy
